@@ -4,7 +4,22 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
 def _flat(seq):
-    if not seq:
+    """Flatten a sequence of labels.
+
+    Parameters
+    ----------
+    seq : sequence or array-like
+        The sequence of labels. This may be a list of lists, a numpy array,
+        or ``None``.
+
+    Returns
+    -------
+    list
+        A flat list of labels. If ``seq`` is ``None`` or empty an empty list
+        is returned.
+    """
+
+    if seq is None or len(seq) == 0:
         return []
     if isinstance(seq[0], list):
         return [y for x in seq for y in x]
