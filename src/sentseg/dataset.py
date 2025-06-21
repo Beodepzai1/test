@@ -3,6 +3,16 @@ import pandas as pd, re
 from pathlib import Path
 from typing import List, Dict, Tuple
 
+"""Utilities for loading the VIHSD dataset.
+
+The original data assigns three labels:
+    1 -> clean
+    2 -> offensive
+    3 -> hate
+These labels are not used for sentence segmentation but remain in the CSV
+files for reference.
+"""
+
 # ---------- tiny helpers ----------
 def _split_by_punc(text: str) -> List[str]:
     return [p for p in re.split(r"(?<=[.!?])\s+", text.strip()) if p]
@@ -32,3 +42,14 @@ def prepare(cfg: Dict):
     train, dev, test = load(cfg)
     make_conll(train, Path(cfg["data"]["train_conll"]))
     return train, dev, test
+
+def df2sents(df: pd.DataFrame):
+    sents = []
+    for txt in df["free_text"].astype(str):
+        for sent in _split_by_punc(txt):
+            toks = _sent2tokens(sent)
+            sents.append([
+                (tok, "B" if i == len(toks) - 1 else "I")
+                for i, tok in enumerate(toks)
+            ])
+    return sents
