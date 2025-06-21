@@ -42,8 +42,12 @@ def train_transformer(cfg: Dict):
 
     train_df = pd.read_csv(cfg["data"]["train_path"])
     dev_df   = pd.read_csv(cfg["data"]["dev_path"])
-    train_ds = Dataset.from_pandas(train_df).map(_encode, batched=True, remove_columns=train_df.columns)
-    dev_ds   = Dataset.from_pandas(dev_df).map(_encode, batched=True, remove_columns=dev_df.columns)
+    train_ds = Dataset.from_pandas(train_df).map(
+        _encode, batched=True, remove_columns=list(train_df.columns)
+    )
+    dev_ds   = Dataset.from_pandas(dev_df).map(
+        _encode, batched=True, remove_columns=list(dev_df.columns)
+    )
 
     model = AutoModelForTokenClassification.from_pretrained(
         cfg["models"]["transformer"]["model_name"], num_labels=2
