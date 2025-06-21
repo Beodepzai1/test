@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name        = "sentseg-vihsd"
+version     = "0.3.0"
+description = "Vietnamese sentence segmentation on VIHSD"
+authors     = [{name = "Research Upgraded"}]
+
+dependencies = [
+  "pandas>=2.2.2",
+  "transformers>=4.41.0",
+  "torch>=2.3.0",
+  "datasets>=2.19.0",
+  "sklearn-crfsuite>=0.3.6",
+  "python-crfsuite>=0.9.9",
+  "pysbd>=0.3.4",
+  "wtpsplit>=0.2.0",
+  "nltk>=3.8.1",
+  "tqdm"
+]
