@@ -13,7 +13,7 @@ models:
     model_name: vinai/phobert-base   # BARTpho … đều được
 
 baselines:
-  active: [regex, crf, phobert, pysbd, punkt, wtp, wtp_finetune]
+  active: [regex, crf, phobert, punkt, wtp, wtp_finetune]
 wtp:
   model_name: wtp-xlmr-c3
   finetune_sentences: 128           # số câu dev để few‑shot
