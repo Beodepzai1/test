@@ -27,3 +27,8 @@ python -m sentseg.cli -c configs/default.yaml --baseline regex
 ```
 
 Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` hoặc `wtp_finetune` để thử nghiệm các phương pháp khác. Lệnh sẽ in ra F1 và Accuracy của mô hình trên tập dev và test.
+
+### Lưu ý
+
+- Baseline `phobert` yêu cầu `transformers>=4.41.0`. Nếu cài phiên bản cũ hơn, lệnh có thể báo lỗi `TypeError` ở tham số `evaluation_strategy`.
+- Khi dùng `phobert`, chương trình sẽ in F1 và Accuracy trên tập dev và test sau khi huấn luyện.
