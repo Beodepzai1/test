@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Callable
 from sentseg import dataset as ds, evaluator
 from sentseg.baseline import split as regex_split
-from sentseg.baselines import pysbd_wrapper, punkt_wrapper, wtp_wrapper
+from sentseg.baselines import punkt_wrapper, wtp_wrapper
 from sentseg.classifier_models import build_textcnn, build_gru, build_bert
 
 
@@ -17,8 +17,6 @@ def apply_segmentation(df, split_func: Callable[[str], list[str]]):
 def load_baseline(name: str) -> Callable[[str], list[str]]:
     if name == "regex":
         return regex_split
-    if name == "pysbd":
-        return pysbd_wrapper.PySBDSplitter().split
     if name == "punkt":
         return punkt_wrapper.PunktSplitter().split
     if name == "wtp":
@@ -30,7 +28,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
     ap.add_argument("--baseline", default="regex",
-                    choices=["regex", "pysbd", "punkt", "wtp"])
+                    choices=["regex", "punkt", "wtp"])
     ap.add_argument("--model", default="textcnn",
                     choices=["textcnn", "bert", "gru"])
     args = ap.parse_args()
