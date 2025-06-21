@@ -5,10 +5,15 @@ from typing import List, Dict, Tuple
 
 """Utilities for loading the VIHSD dataset.
 
-The original data assigns three labels:
+The classification portion of VIHSD may store labels either starting from 1
+(`clean=1`, `offensive=2`, `hate=3`) or already zero-indexed
+(`clean=0`, `offensive=1`, `hate=2`).
+
+When loading the data we normalise them to the 0‑based scheme:
     0 -> clean
     1 -> offensive
     2 -> hate
+
 These labels are not used for sentence segmentation but remain in the CSV
 files for reference.
 """
@@ -24,9 +29,13 @@ def _sent2tokens(sent: str) -> List[str]:
 # ---------- public API ------------
 def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
     """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2)."""
-    if "label" in df.columns:
-        df = df.copy()
-        df["label"] = df["label"].map({1: 0, 2: 1, 3: 2}).fillna(df["label"])
+    if "label" not in df.columns:
+        return df
+
+    df = df.copy()
+    vals = set(df["label"].unique())
+    if vals <= {1, 2, 3}:  # dataset uses 1-based indexing
+        df["label"] = df["label"].map({1: 0, 2: 1, 3: 2})
     return df
 
 

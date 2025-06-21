@@ -22,6 +22,7 @@ def evaluate_labels(y_true, y_pred):
         labels=labels,
         average="macro",
         zero_division=0,
+        pos_label=labels[0] if labels else 1,
     )
     acc = accuracy_score(y_true_f, y_pred_f)
     return {"precision": p, "recall": r, "f1": f, "accuracy": acc}
