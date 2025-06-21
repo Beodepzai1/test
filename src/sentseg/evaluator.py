@@ -1,3 +1,5 @@
+"""Evaluation utilities for sentence segmentation baselines."""
+
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
@@ -14,21 +16,13 @@ def evaluate_labels(y_true, y_pred):
     y_pred_f = _flat(y_pred)
 
     labels = sorted(set(y_true_f) | set(y_pred_f))
-    if labels == ["B", "I"] or labels == ["I", "B"]:
-        p, r, f, _ = precision_recall_fscore_support(
-            y_true_f,
-            y_pred_f,
-            average="binary",
-            pos_label="B",
-            zero_division=0,
-        )
-    else:
-        p, r, f, _ = precision_recall_fscore_support(
-            y_true_f,
-            y_pred_f,
-            average="macro",
-            zero_division=0,
-        )
+    p, r, f, _ = precision_recall_fscore_support(
+        y_true_f,
+        y_pred_f,
+        labels=labels,
+        average="macro",
+        zero_division=0,
+    )
     acc = accuracy_score(y_true_f, y_pred_f)
     return {"precision": p, "recall": r, "f1": f, "accuracy": acc}
 

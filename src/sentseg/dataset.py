@@ -6,9 +6,9 @@ from typing import List, Dict, Tuple
 """Utilities for loading the VIHSD dataset.
 
 The original data assigns three labels:
-    1 -> clean
-    2 -> offensive
-    3 -> hate
+    0 -> clean
+    1 -> offensive
+    2 -> hate
 These labels are not used for sentence segmentation but remain in the CSV
 files for reference.
 """
@@ -22,10 +22,19 @@ def _sent2tokens(sent: str) -> List[str]:
     return sent.split()
 
 # ---------- public API ------------
+def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2)."""
+    if "label" in df.columns:
+        df = df.copy()
+        df["label"] = df["label"].map({1: 0, 2: 1, 3: 2}).fillna(df["label"])
+    return df
+
+
 def load(cfg: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    return (pd.read_csv(cfg["data"]["train_path"]),
-            pd.read_csv(cfg["data"]["dev_path"]),
-            pd.read_csv(cfg["data"]["test_path"]))
+    train = pd.read_csv(cfg["data"]["train_path"])
+    dev = pd.read_csv(cfg["data"]["dev_path"])
+    test = pd.read_csv(cfg["data"]["test_path"])
+    return (_remap_labels(train), _remap_labels(dev), _remap_labels(test))
 
 def make_conll(df: pd.DataFrame, out_path: Path) -> None:
     rows = []
