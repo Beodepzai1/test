@@ -26,4 +26,4 @@ Sau khi chỉnh sửa đường dẫn dữ liệu trong `configs/default.yaml`, 
 python -m sentseg.cli -c configs/default.yaml --baseline regex
 ```
 
-Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` hoặc `wtp_finetune` để thử nghiệm các phương pháp khác.
+Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` hoặc `wtp_finetune` để thử nghiệm các phương pháp khác. Lệnh sẽ in ra F1 và Accuracy của mô hình trên tập dev và test.
