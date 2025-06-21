@@ -2,8 +2,14 @@ from pathlib import Path
 from typing import Dict
 import pandas as pd
 from datasets import Dataset
-from transformers import (AutoTokenizer, AutoModelForTokenClassification,
-                          Trainer, TrainingArguments)
+from transformers import (
+    AutoTokenizer,
+    AutoModelForTokenClassification,
+    Trainer,
+    TrainingArguments,
+)
+from packaging import version
+import transformers
 from sentseg.models import crf_model
 from sentseg.features import sent2features, sent2labels
 
@@ -33,6 +39,10 @@ def train_crf(cfg: Dict):
 
 # ------------ PhoBERT ---------------
 def train_transformer(cfg: Dict):
+    if version.parse(transformers.__version__) < version.parse("4.41.0"):
+        raise RuntimeError(
+            f"transformers >=4.41.0 required, found {transformers.__version__}"
+        )
     tk = AutoTokenizer.from_pretrained(cfg["models"]["transformer"]["model_name"])
 
     def _encode(batch):

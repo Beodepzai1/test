@@ -8,6 +8,7 @@ from sentseg.baselines import (
     punkt_wrapper,
     wtp_wrapper,
 )
+from sentseg.models.transformer import PhoBERTSegmenter
 
 def run_baseline(baseline, cfg):
     _, dev_df, test_df = ds.load(cfg)
@@ -63,6 +64,11 @@ def main():
             print(f"Test F1={test_res['f1']:.4f} Acc={test_res['accuracy']:.4f}")
         else:
             trainer.train_transformer(cfg)
+            segmenter = PhoBERTSegmenter(model_name=cfg["output"]["dir"])
+            dev_res = evaluator.evaluate_split(segmenter.predict, dev_df)
+            test_res = evaluator.evaluate_split(segmenter.predict, test_df)
+            print(f"Dev F1={dev_res['f1']:.4f} Acc={dev_res['accuracy']:.4f}")
+            print(f"Test F1={test_res['f1']:.4f} Acc={test_res['accuracy']:.4f}")
     else:
         run_baseline(args.baseline, cfg)
 
