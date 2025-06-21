@@ -5,6 +5,8 @@ import yaml
 from pathlib import Path
 from typing import Callable, List
 
+import numpy as np
+
 from sentseg import dataset as ds, evaluator
 from sentseg.baseline import split as regex_split
 from sentseg.baselines import punkt_wrapper, wtp_wrapper
@@ -44,6 +46,7 @@ def main():
     ap.add_argument("--model", required=True,
                     choices=["textcnn", "bert", "gru"],
                     help="classification model")
+    ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
     args = ap.parse_args()
 
     # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
@@ -77,6 +80,19 @@ def main():
         stoi["<pad>"] = 0
         stoi["<unk>"] = 1
 
+        embed_dim = 128
+        embeddings = None
+        if args.fasttext:
+            from gensim.models import KeyedVectors
+            kv = KeyedVectors.load_word2vec_format(args.fasttext)
+            embed_dim = kv.vector_size
+            embeddings = np.random.normal(scale=0.6, size=(len(stoi), embed_dim))
+            embeddings[0] = 0
+            embeddings[1] = 0
+            for tok, idx in stoi.items():
+                if tok in kv:
+                    embeddings[idx] = kv[tok]
+
         def encode(text: str) -> List[int]:
             return [stoi.get(tok, 1) for tok in tk(text)]
 
@@ -85,9 +101,19 @@ def main():
             return pad_sequences(ids, pad_idx=0)
 
         if args.model == "textcnn":
-            model = build_textcnn(len(stoi), num_classes)
+            model = build_textcnn(
+                len(stoi),
+                num_classes,
+                embed_dim=embed_dim,
+                pretrained_embeddings=embeddings,
+            )
         else:  # gru
-            model = build_gru(len(stoi), num_classes)
+            model = build_gru(
+                len(stoi),
+                num_classes,
+                embed_dim=embed_dim,
+                pretrained_embeddings=embeddings,
+            )
 
     # ─── 4. Mã hoá & padding dữ liệu ────────────────────────────────────────
     train_ids = encode_df(train_df)

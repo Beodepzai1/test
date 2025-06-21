@@ -13,15 +13,28 @@ def _load_torch():
         raise ImportError("PyTorch is required for this module") from e
 
 
-def build_textcnn(vocab_size: int, num_classes: int, embed_dim: int = 128,
-                  kernel_sizes: Iterable[int] = (3, 4, 5), num_filters: int = 100,
-                  dropout: float = 0.5):
+def build_textcnn(
+    vocab_size: int,
+    num_classes: int,
+    embed_dim: int = 128,
+    kernel_sizes: Iterable[int] = (3, 4, 5),
+    num_filters: int = 100,
+    dropout: float = 0.5,
+    pretrained_embeddings=None,
+    freeze_embedding: bool = True,
+):
     torch, nn, F = _load_torch()
 
     class TextCNN(nn.Module):
         def __init__(self):
             super().__init__()
             self.embedding = nn.Embedding(vocab_size, embed_dim)
+            if pretrained_embeddings is not None:
+                self.embedding.weight.data.copy_(
+                    torch.tensor(pretrained_embeddings)
+                )
+                if freeze_embedding:
+                    self.embedding.weight.requires_grad = False
             self.convs = nn.ModuleList([
                 nn.Conv1d(embed_dim, num_filters, k) for k in kernel_sizes
             ])
@@ -38,15 +51,29 @@ def build_textcnn(vocab_size: int, num_classes: int, embed_dim: int = 128,
     return TextCNN()
 
 
-def build_gru(vocab_size: int, num_classes: int, embed_dim: int = 128,
-              hidden_dim: int = 128, num_layers: int = 1,
-              bidirectional: bool = True, dropout: float = 0.5):
+def build_gru(
+    vocab_size: int,
+    num_classes: int,
+    embed_dim: int = 128,
+    hidden_dim: int = 128,
+    num_layers: int = 1,
+    bidirectional: bool = True,
+    dropout: float = 0.5,
+    pretrained_embeddings=None,
+    freeze_embedding: bool = True,
+):
     torch, nn, F = _load_torch()
 
     class GRUClassifier(nn.Module):
         def __init__(self):
             super().__init__()
             self.embedding = nn.Embedding(vocab_size, embed_dim)
+            if pretrained_embeddings is not None:
+                self.embedding.weight.data.copy_(
+                    torch.tensor(pretrained_embeddings)
+                )
+                if freeze_embedding:
+                    self.embedding.weight.requires_grad = False
             self.rnn = nn.GRU(embed_dim, hidden_dim, num_layers,
                               batch_first=True, bidirectional=bidirectional,
                               dropout=dropout if num_layers > 1 else 0)
@@ -66,7 +93,7 @@ def build_gru(vocab_size: int, num_classes: int, embed_dim: int = 128,
     return GRUClassifier()
 
 
-def build_bert(model_name: str = "bert-base-uncased", num_classes: int = 3):
+def build_bert(model_name: str = "bert-base-multilingual-cased", num_classes: int = 3):
     torch, nn, _ = _load_torch()
     transformers = importlib.import_module("transformers")
     model = transformers.AutoModelForSequenceClassification.from_pretrained(
