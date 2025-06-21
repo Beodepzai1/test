@@ -1,6 +1,7 @@
 import argparse, yaml, csv, random
 from pathlib import Path
-from sentseg import dataset as ds, trainer
+from sentseg import dataset as ds, trainer, evaluator
+from sentseg.features import sent2features, sent2labels
 from sentseg.baseline import split as regex_split
 from sentseg.baselines import (
     pysbd_wrapper, punkt_wrapper, wtp_wrapper
@@ -36,12 +37,29 @@ def main():
                              "pysbd","punkt","wtp","wtp_finetune"],
                     default="regex")
     args = ap.parse_args()
-    cfg = yaml.safe_load(Path(args.config).read_text())
+    cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
 
     if args.baseline in ["crf", "phobert"]:
-        ds.prepare(cfg)
+        train_df, dev_df, test_df = ds.prepare(cfg)
         if args.baseline == "crf":
-            trainer.train_crf(cfg)
+            model = trainer.train_crf(cfg)
+            # evaluate on dev and test
+            def _df2sents(df):
+                sents = []
+                for txt in df["free_text"].astype(str):
+                    for sent in ds._split_by_punc(txt):
+                        toks = ds._sent2tokens(sent)
+                        sents.append([(tok, "B" if i == len(toks)-1 else "I")
+                                      for i, tok in enumerate(toks)])
+                return sents
+            dev_s = _df2sents(dev_df)
+            test_s = _df2sents(test_df)
+            X_dev = [sent2features(s) for s in dev_s]
+            y_dev = [sent2labels(s) for s in dev_s]
+            X_test = [sent2features(s) for s in test_s]
+            y_test = [sent2labels(s) for s in test_s]
+            print("Dev:", evaluator.evaluate_crf(model, X_dev, y_dev))
+            print("Test:", evaluator.evaluate_crf(model, X_test, y_test))
         else:
             trainer.train_transformer(cfg)
     else:
