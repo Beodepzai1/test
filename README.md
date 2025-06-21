@@ -32,3 +32,11 @@ Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` ho�
 
 - Baseline `phobert` yêu cầu `transformers>=4.41.0`. Nếu cài phiên bản cũ hơn, lệnh có thể báo lỗi `TypeError` ở tham số `evaluation_strategy`.
 - Khi dùng `phobert`, chương trình sẽ in F1 và Accuracy trên tập dev và test sau khi huấn luyện.
+
+## Phân loại văn bản
+
+Pipeline phân loại dựa trên các bước: câu -> tách câu (theo baseline) -> mô hình (TextCNN, BERT, GRU). Có thể chạy như sau:
+```bash
+python -m sentseg.classify_cli -c configs/default.yaml --baseline regex --model textcnn
+```
+Thay `--model` bằng `bert` hoặc `gru` để thử nghiệm các mô hình khác. Kết quả sẽ in ra F1 và Accuracy trên tập dev và test.
