@@ -28,9 +28,13 @@ def _sent2tokens(sent: str) -> List[str]:
 
 # ---------- public API ------------
 def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2)."""
+    """Ensure class labels are stored in a ``label`` column and are 0-indexed."""
     if "label" not in df.columns:
-        return df
+        # Some datasets may store the column under ``label_id``.
+        if "label_id" in df.columns:
+            df = df.rename(columns={"label_id": "label"})
+        else:
+            return df
 
     df = df.copy()
     vals = set(df["label"].unique())
