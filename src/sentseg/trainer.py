@@ -36,7 +36,11 @@ def train_transformer(cfg: Dict):
     tk = AutoTokenizer.from_pretrained(cfg["models"]["transformer"]["model_name"])
 
     def _encode(batch):
-        enc = tk(batch["free_text"], truncation=True)
+        # ``datasets`` may return non-string types (e.g. ``pd.NA``) so we
+        # explicitly cast each entry to ``str`` before tokenisation to satisfy
+        # the tokenizer API which expects strings or lists of strings.
+        texts = [str(t) for t in batch["free_text"]]
+        enc = tk(texts, truncation=True)
         enc["labels"] = [[0]*len(x) for x in enc["input_ids"]]  # dummy (B/I cần gắn nhãn thực nếu muốn)
         return enc
 
