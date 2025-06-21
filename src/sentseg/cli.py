@@ -36,7 +36,7 @@ def main():
                              "pysbd","punkt","wtp","wtp_finetune"],
                     default="regex")
     args = ap.parse_args()
-    cfg = yaml.safe_load(Path(args.config).read_text())
+    cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
 
     if args.baseline in ["crf", "phobert"]:
         ds.prepare(cfg)
