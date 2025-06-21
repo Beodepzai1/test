@@ -51,9 +51,10 @@ def evaluate_crf(model, X, y):
 def evaluate_split(split_func, df):
     from sentseg import dataset as ds
     y_true, y_pred = [], []
-    for txt in df["free_text"].astype(str):
+    for _, row in df.iterrows():
+        txt = str(row["free_text"])
         gold, pred = [], []
-        for sent in ds._split_by_punc(txt):
+        for sent in ds._split_row(row):
             toks = ds._sent2tokens(sent)
             gold.extend(["I"] * (len(toks) - 1) + ["B"])
         for sent in split_func(txt):

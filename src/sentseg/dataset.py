@@ -45,10 +45,25 @@ def load(cfg: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     test = pd.read_csv(cfg["data"]["test_path"])
     return (_remap_labels(train), _remap_labels(dev), _remap_labels(test))
 
+def _split_row(row) -> List[str]:
+    """Return the list of sentences for a DataFrame row.
+
+    If the dataset provides a ``sentences`` column containing newline
+    separated sentences this is used as the gold segmentation. Otherwise
+    text is segmented with :func:`_split_by_punc` as a fallback.
+    """
+
+    if "sentences" in row and isinstance(row["sentences"], str):
+        segs = [s for s in str(row["sentences"]).splitlines() if s.strip()]
+        if segs:
+            return segs
+    return _split_by_punc(str(row["free_text"]))
+
+
 def make_conll(df: pd.DataFrame, out_path: Path) -> None:
     rows = []
-    for txt in df["free_text"].astype(str):
-        for sent in _split_by_punc(txt):
+    for _, row in df.iterrows():
+        for sent in _split_row(row):
             toks = _sent2tokens(sent)
             for i, tok in enumerate(toks):
                 lab = "B" if i == len(toks) - 1 else "I"
@@ -63,8 +78,8 @@ def prepare(cfg: Dict):
 
 def df2sents(df: pd.DataFrame):
     sents = []
-    for txt in df["free_text"].astype(str):
-        for sent in _split_by_punc(txt):
+    for _, row in df.iterrows():
+        for sent in _split_row(row):
             toks = _sent2tokens(sent)
             sents.append([
                 (tok, "B" if i == len(toks) - 1 else "I")
