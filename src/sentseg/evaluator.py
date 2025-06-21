@@ -28,11 +28,16 @@ def evaluate_labels(y_true, y_pred):
             zero_division=0,
         )
     else:
+        # ``precision_recall_fscore_support`` performs validation on
+        # ``pos_label`` even when ``average`` is not ``"binary"``. Provide a
+        # value that is guaranteed to be valid for the current label set to
+        # avoid ``pos_label`` related errors on recent scikit-learn versions.
         p, r, f, _ = precision_recall_fscore_support(
             y_true_f,
             y_pred_f,
             labels=labels,
             average="macro",
+            pos_label=labels[0],
             zero_division=0,
         )
     acc = accuracy_score(y_true_f, y_pred_f)
