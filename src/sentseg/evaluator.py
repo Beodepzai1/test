@@ -9,7 +9,7 @@ def evaluate_labels(y_true, y_pred):
     y_true_f = _flat(y_true)
     y_pred_f = _flat(y_pred)
     p, r, f, _ = precision_recall_fscore_support(
-        y_true_f, y_pred_f, labels=["B"], average="binary"
+        y_true_f, y_pred_f, pos_label="B", average="binary"
     )
     acc = accuracy_score(y_true_f, y_pred_f)
     return {"precision": p, "recall": r, "f1": f, "accuracy": acc}
