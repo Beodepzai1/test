@@ -1,0 +1,27 @@
+data:
+  train_path: /mnt/data/train.csv   # sửa lại path thực
+  dev_path:   /mnt/data/dev.csv
+  test_path:  /mnt/data/test.csv
+  train_conll: /mnt/data/train.conll
+
+models:
+  crf:
+    c1: 0.1
+    c2: 0.1
+    max_iter: 200
+  transformer:
+    model_name: vinai/phobert-base   # BARTpho … đều được
+
+baselines:
+  active: [regex, crf, phobert, pysbd, punkt, wtp, wtp_finetune]
+wtp:
+  model_name: wtp-xlmr-c3
+  finetune_sentences: 128           # số câu dev để few‑shot
+
+trainer:
+  batch_size: 16
+  learning_rate: 5e-5
+  epochs: 3
+
+output:
+  dir: /mnt/data/sentseg_output
