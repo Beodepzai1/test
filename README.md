@@ -21,12 +21,12 @@ python -m nltk.downloader punkt   # cho baseline Punkt
 
 ## Sử dụng
 
-Sau khi chỉnh sửa đường dẫn dữ liệu trong `configs/default.yaml`, có thể chạy một baseline như sau:
+Sau khi chỉnh sửa đường dẫn dữ liệu trong `configs/default.yaml`, chạy toàn bộ pipeline phân đoạn câu và phân loại văn bản như sau:
 ```bash
-python -m sentseg.cli -c configs/default.yaml --baseline regex
+python -m sentseg.cli -c configs/default.yaml --baseline regex --model textcnn
 ```
 
-Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` hoặc `wtp_finetune` để thử nghiệm các phương pháp khác. Lệnh sẽ in ra F1 và Accuracy của mô hình trên tập dev và test.
+Thay `--baseline` bằng `pysbd`, `punkt` hoặc `wtp` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
 
 ### Lưu ý
 
@@ -35,8 +35,8 @@ Thay tham số `--baseline` bằng `crf`, `phobert`, `pysbd`, `punkt`, `wtp` ho�
 
 ## Phân loại văn bản
 
-Pipeline phân loại dựa trên các bước: câu -> tách câu (theo baseline) -> mô hình (TextCNN, BERT, GRU). Có thể chạy như sau:
+Pipeline phân loại dựa trên các bước: câu → tách câu (theo baseline) → mô hình (TextCNN, BERT, GRU). Có thể chạy bằng lệnh ở trên hoặc:
 ```bash
-python -m sentseg.classify_cli -c configs/default.yaml --baseline regex --model textcnn
+python -m sentseg.cli -c configs/default.yaml --baseline regex --model textcnn
 ```
-Thay `--model` bằng `bert` hoặc `gru` để thử nghiệm các mô hình khác. Kết quả sẽ in ra F1 và Accuracy trên tập dev và test.
+Thay `--model` bằng `bert` hoặc `gru` để thử nghiệm các mô hình khác.
