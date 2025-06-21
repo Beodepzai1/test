@@ -1,6 +1,6 @@
 # SentenceSeg-VIHSD
 
-Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm ba nhãn `clean=1`, `offensive=2`, `hate=3`) kèm 7 baseline:
+Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (các nhãn gốc `clean=0`, `offensive=1`, `hate=2`) kèm 7 baseline:
 
 | Baseline         | Nhóm        | Tham chiếu nghiên cứu         |
 |------------------|--------------|-----------------------------------------|

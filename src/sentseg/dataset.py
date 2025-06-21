@@ -5,12 +5,16 @@ from typing import List, Dict, Tuple
 
 """Utilities for loading the VIHSD dataset.
 
-The original data assigns three labels:
-    1 -> clean
-    2 -> offensive
-    3 -> hate
-These labels are not used for sentence segmentation but remain in the CSV
-files for reference.
+The official VIHSD corpus labels each comment with one of three values::
+
+    0 -> clean
+    1 -> offensive
+    2 -> hate
+
+These labels are kept in the CSV files for reference.  Sentence
+segmentation only relies on the ``free_text`` column but we expose a helper
+to normalise the labels should older 1-indexed variants of the dataset be
+encountered.
 """
 
 # ---------- tiny helpers ----------
@@ -21,11 +25,26 @@ def _sent2tokens(sent: str) -> List[str]:
     sent = re.sub(r"([.!?])", r" \1 ", sent)
     return sent.split()
 
+# convert labels to 0-based numbering
+def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
+    if "label" not in df.columns:
+        return df
+    labs = df["label"].astype(int)
+    if labs.min() == 1 and labs.max() == 3:
+        df = df.copy()
+        df["label"] = labs - 1
+    return df
+
 # ---------- public API ------------
 def load(cfg: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    return (pd.read_csv(cfg["data"]["train_path"]),
-            pd.read_csv(cfg["data"]["dev_path"]),
-            pd.read_csv(cfg["data"]["test_path"]))
+    def read(path: str) -> pd.DataFrame:
+        return _remap_labels(pd.read_csv(path))
+
+    return (
+        read(cfg["data"]["train_path"]),
+        read(cfg["data"]["dev_path"]),
+        read(cfg["data"]["test_path"]),
+    )
 
 def make_conll(df: pd.DataFrame, out_path: Path) -> None:
     rows = []
