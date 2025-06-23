@@ -1,6 +1,6 @@
 # SentenceSeg-VIHSD
 
-Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm ba nhãn `clean=0`, `offensive=1`, `hate=2`) kèm 7 baseline:
+Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm ba nhãn `clean=0`, `offensive=1`, `hate=2`) kèm 6 baseline:
 
 | Baseline         | Nhóm        | Tham chiếu nghiên cứu         |
 |------------------|--------------|-----------------------------------------|
@@ -10,7 +10,7 @@ Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm b
 | phobert          | DL           | Ersatz (Transformer)                    |
 | punkt            | US           | Kiss & Strunk 2006                      |
 | wtp              | SS (Self-sup)| Minixhofer et al 2023                   |
-| wtp_finetune     | Few-shot     | 〃 (64-256 câu)                        |
+
 
 ## Cài đặt
 
