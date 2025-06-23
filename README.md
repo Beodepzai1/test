@@ -32,6 +32,8 @@ Thay `--baseline` bằng `none`, `punkt` hoặc `wtp` và `--model` bằng `bert
 
 - Baseline `phobert` yêu cầu `transformers>=4.41.0`. Nếu cài phiên bản cũ hơn, lệnh có thể báo lỗi `TypeError` ở tham số `evaluation_strategy`.
 - Khi dùng `phobert`, chương trình sẽ in F1 và Accuracy trên tập dev và test sau khi huấn luyện.
+- Baseline `wtp` mặc định tải mô hình `wtp-bert-mini` từ HuggingFace. Hãy đảm
+  bảo máy tính có kết nối mạng trong lần chạy đầu tiên.
 
 ## Phân loại văn bản
 
