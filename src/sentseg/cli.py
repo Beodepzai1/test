@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # sentseg/cli.py
 import sys
+
 if "/usr/lib/python3/dist-packages" not in sys.path:
     sys.path.append("/usr/lib/python3/dist-packages")
 import argparse
@@ -11,12 +12,13 @@ from typing import Callable, List
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
+from torch.utils.data import DataLoader, TensorDataset
 
 from sentseg import dataset as ds, evaluator
 from sentseg.baseline import split as regex_split
 from sentseg.classifier_models import build_textcnn, build_gru, build_bert
 
-LABEL_COL = "label_id"        
+LABEL_COL = "label_id"
 
 
 def apply_segmentation(df, split_func: Callable[[str], List[str]]):
@@ -30,16 +32,22 @@ def load_baseline(name: str) -> Callable[[str], List[str]]:
         return regex_split
     if name == "none":
         from sentseg.baseline import split_none
+
         return split_none
     if name == "punkt":
         from sentseg.baselines import punkt_wrapper
+
         return punkt_wrapper.PunktSplitter().split
     if name == "wtp":
         try:
             from sentseg.baselines import wtp_wrapper
+
             return wtp_wrapper.WtPSplitter().split
         except Exception as e:
-            print(f"Warning: cannot load WtP baseline ({e}); falling back to regex", file=sys.stderr)
+            print(
+                f"Warning: cannot load WtP baseline ({e}); falling back to regex",
+                file=sys.stderr,
+            )
             return regex_split
     raise ValueError("unknown baseline")
 
@@ -54,11 +62,15 @@ def main():
     # ─── 1. Đọc tham số dòng lệnh ───────────────────────────────────────────
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
-    ap.add_argument("--baseline", default="regex",
-                    choices=["regex", "none", "punkt", "wtp"])
-    ap.add_argument("--model", required=True,
-                    choices=["textcnn", "bert", "gru"],
-                    help="classification model")
+    ap.add_argument(
+        "--baseline", default="regex", choices=["regex", "none", "punkt", "wtp"]
+    )
+    ap.add_argument(
+        "--model",
+        required=True,
+        choices=["textcnn", "bert", "gru"],
+        help="classification model",
+    )
     ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
     args = ap.parse_args()
 
@@ -73,8 +85,8 @@ def main():
             raise KeyError(f"'{LABEL_COL}' not found in {name} dataframe")
 
     train_df = apply_segmentation(train_df, splitter)
-    dev_df   = apply_segmentation(dev_df,   splitter)
-    test_df  = apply_segmentation(test_df,  splitter)
+    dev_df = apply_segmentation(dev_df, splitter)
+    test_df = apply_segmentation(test_df, splitter)
 
     num_classes = train_df[LABEL_COL].nunique()
 
@@ -82,6 +94,7 @@ def main():
     use_torch = True
     try:
         import importlib
+
         torch = importlib.import_module("torch")
         nn = importlib.import_module("torch.nn")
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,6 +113,7 @@ def main():
         embeddings = None
         if args.fasttext:
             from gensim.models import KeyedVectors
+
             kv = KeyedVectors.load_word2vec_format(args.fasttext)
             embed_dim = kv.vector_size
             embeddings = np.random.normal(scale=0.6, size=(len(stoi), embed_dim))
@@ -133,39 +147,51 @@ def main():
 
         # ─── 4. Mã hoá & padding dữ liệu ────────────────────────────────────
         train_ids = encode_df(train_df)
-        dev_ids   = encode_df(dev_df)
-        test_ids  = encode_df(test_df)
+        dev_ids = encode_df(dev_df)
+        test_ids = encode_df(test_df)
 
         train_ds = {"input_ids": train_ids, "labels": train_df[LABEL_COL].tolist()}
-        dev_ds   = {"input_ids": dev_ids,   "labels": dev_df[LABEL_COL].tolist()}
-        test_ds  = {"input_ids": test_ids,  "labels": test_df[LABEL_COL].tolist()}
+        dev_ds = {"input_ids": dev_ids, "labels": dev_df[LABEL_COL].tolist()}
+        test_ds = {"input_ids": test_ids, "labels": test_df[LABEL_COL].tolist()}
 
         # ─── 5. Huấn luyện demo (2 epoch) ───────────────────────────────────
         optim = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = nn.CrossEntropyLoss()
-        X = torch.tensor(train_ds["input_ids"], dtype=torch.long).to(device)
-        y = torch.tensor(train_ds["labels"],     dtype=torch.long).to(device)
+        batch_size = cfg.get("trainer", {}).get("batch_size", 16)
+        X_train = torch.tensor(train_ds["input_ids"], dtype=torch.long)
+        y_train = torch.tensor(train_ds["labels"], dtype=torch.long)
+        train_loader = DataLoader(
+            TensorDataset(X_train, y_train), batch_size=batch_size, shuffle=True
+        )
         model.to(device)
 
-        model.train()
-        for _ in range(2):
-            optim.zero_grad()
-            out = model(X)
-            loss = loss_fn(out, y)
-            loss.backward()
-            optim.step()
+        epochs = cfg.get("trainer", {}).get("epochs", 2)
+        for _ in range(epochs):
+            model.train()
+            for Xb, yb in train_loader:
+                Xb, yb = Xb.to(device), yb.to(device)
+                optim.zero_grad()
+                out = model(Xb)
+                loss = loss_fn(out, yb)
+                loss.backward()
+                optim.step()
 
         # ─── 6. Dự đoán & đánh giá ─────────────────────────────────────────
         def predict(dataset):
             model.eval()
-            X = torch.tensor(dataset["input_ids"], dtype=torch.long).to(device)
+            X = torch.tensor(dataset["input_ids"], dtype=torch.long)
+            loader = DataLoader(X, batch_size=batch_size)
+            preds = []
             with torch.no_grad():
-                return model(X).argmax(-1).cpu().tolist()
+                for Xb in loader:
+                    out = model(Xb.to(device)).argmax(-1).cpu().tolist()
+                    preds.extend(out)
+            return preds
 
-        dev_pred  = predict(dev_ds)
+        dev_pred = predict(dev_ds)
         test_pred = predict(test_ds)
 
-        dev_res  = evaluator.evaluate_labels(dev_ds["labels"],  dev_pred)
+        dev_res = evaluator.evaluate_labels(dev_ds["labels"], dev_pred)
         test_res = evaluator.evaluate_labels(test_ds["labels"], test_pred)
         print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
         print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
@@ -173,42 +199,58 @@ def main():
         model, tk = build_bert(num_classes=num_classes)
 
         def encode_df(df):
-            enc_out = tk(df["segmented"].tolist(),
-                         truncation=True, padding=True, return_tensors="pt")
+            enc_out = tk(
+                df["segmented"].tolist(),
+                truncation=True,
+                padding=True,
+                return_tensors="pt",
+            )
             return enc_out["input_ids"].tolist()
 
         train_ids = encode_df(train_df)
-        dev_ids   = encode_df(dev_df)
-        test_ids  = encode_df(test_df)
+        dev_ids = encode_df(dev_df)
+        test_ids = encode_df(test_df)
 
         train_ds = {"input_ids": train_ids, "labels": train_df[LABEL_COL].tolist()}
-        dev_ds   = {"input_ids": dev_ids,   "labels": dev_df[LABEL_COL].tolist()}
-        test_ds  = {"input_ids": test_ids,  "labels": test_df[LABEL_COL].tolist()}
+        dev_ds = {"input_ids": dev_ids, "labels": dev_df[LABEL_COL].tolist()}
+        test_ds = {"input_ids": test_ids, "labels": test_df[LABEL_COL].tolist()}
 
         optim = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = nn.CrossEntropyLoss()
-        X = torch.tensor(train_ds["input_ids"], dtype=torch.long).to(device)
-        y = torch.tensor(train_ds["labels"],     dtype=torch.long).to(device)
+        batch_size = cfg.get("trainer", {}).get("batch_size", 16)
+        X_train = torch.tensor(train_ds["input_ids"], dtype=torch.long)
+        y_train = torch.tensor(train_ds["labels"], dtype=torch.long)
+        train_loader = DataLoader(
+            TensorDataset(X_train, y_train), batch_size=batch_size, shuffle=True
+        )
         model.to(device)
 
-        model.train()
-        for _ in range(2):
-            optim.zero_grad()
-            out = model(X)
-            loss = loss_fn(out, y)
-            loss.backward()
-            optim.step()
+        epochs = cfg.get("trainer", {}).get("epochs", 2)
+        for _ in range(epochs):
+            model.train()
+            for Xb, yb in train_loader:
+                Xb, yb = Xb.to(device), yb.to(device)
+                optim.zero_grad()
+                out = model(Xb)
+                loss = loss_fn(out, yb)
+                loss.backward()
+                optim.step()
 
         def predict(dataset):
             model.eval()
-            X = torch.tensor(dataset["input_ids"], dtype=torch.long).to(device)
+            X = torch.tensor(dataset["input_ids"], dtype=torch.long)
+            loader = DataLoader(X, batch_size=batch_size)
+            preds = []
             with torch.no_grad():
-                return model(X).argmax(-1).cpu().tolist()
+                for Xb in loader:
+                    out = model(Xb.to(device)).argmax(-1).cpu().tolist()
+                    preds.extend(out)
+            return preds
 
-        dev_pred  = predict(dev_ds)
+        dev_pred = predict(dev_ds)
         test_pred = predict(test_ds)
 
-        dev_res  = evaluator.evaluate_labels(dev_ds["labels"],  dev_pred)
+        dev_res = evaluator.evaluate_labels(dev_ds["labels"], dev_pred)
         test_res = evaluator.evaluate_labels(test_ds["labels"], test_pred)
         print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
         print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
@@ -217,17 +259,21 @@ def main():
         tk = lambda x: x.split()
         vectorizer = CountVectorizer(tokenizer=tk)
         X_train = vectorizer.fit_transform(train_df["segmented"])
-        X_dev   = vectorizer.transform(dev_df["segmented"])
-        X_test  = vectorizer.transform(test_df["segmented"])
+        X_dev = vectorizer.transform(dev_df["segmented"])
+        X_test = vectorizer.transform(test_df["segmented"])
 
         clf = LogisticRegression(max_iter=1000)
         clf.fit(X_train, train_df[LABEL_COL])
 
-        dev_pred  = clf.predict(X_dev)
+        dev_pred = clf.predict(X_dev)
         test_pred = clf.predict(X_test)
 
-        dev_res  = evaluator.evaluate_labels(dev_df[LABEL_COL].tolist(),  dev_pred.tolist())
-        test_res = evaluator.evaluate_labels(test_df[LABEL_COL].tolist(), test_pred.tolist())
+        dev_res = evaluator.evaluate_labels(
+            dev_df[LABEL_COL].tolist(), dev_pred.tolist()
+        )
+        test_res = evaluator.evaluate_labels(
+            test_df[LABEL_COL].tolist(), test_pred.tolist()
+        )
         print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
         print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
 
