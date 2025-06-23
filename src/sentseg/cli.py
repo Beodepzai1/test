@@ -26,7 +26,7 @@ def apply_segmentation(df, split_func: Callable[[str], List[str]]):
     return df
 
 
-def load_baseline(name: str) -> Callable[[str], List[str]]:
+def load_baseline(name: str, cfg: dict | None = None) -> Callable[[str], List[str]]:
     if name == "regex":
         return regex_split
     if name == "none":
@@ -35,6 +35,11 @@ def load_baseline(name: str) -> Callable[[str], List[str]]:
     if name == "punkt":
         from sentseg.baselines import punkt_wrapper
         return punkt_wrapper.PunktSplitter().split
+    if name == "crf":
+        from sentseg.baselines import crf_wrapper
+        model_dir = Path(cfg.get("output", {}).get("dir", ".")) if cfg else Path(".")
+        model_path = model_dir / "crf.pkl"
+        return crf_wrapper.CRFSplitter(model_path).split
     if name == "wtp":
         try:
             from sentseg.baselines import wtp_wrapper
@@ -58,14 +63,14 @@ def main():
     # ─── 1. Đọc tham số dòng lệnh ───────────────────────────────────────────
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
-    ap.add_argument("--baseline", default="regex", choices=["regex", "none", "punkt", "wtp"])
+    ap.add_argument("--baseline", default="regex", choices=["regex", "none", "punkt", "wtp", "crf"])
     ap.add_argument("--model", required=True, choices=["textcnn", "bert", "gru"], help="classification model")
     ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
     args = ap.parse_args()
 
     # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
-    splitter = load_baseline(args.baseline)
+    splitter = load_baseline(args.baseline, cfg)
 
     train_df, dev_df, test_df = ds.load(cfg)
     for df, name in [(train_df, "train"), (dev_df, "dev"), (test_df, "test")]:

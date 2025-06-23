@@ -26,7 +26,7 @@ Sau khi chỉnh sửa đường dẫn dữ liệu trong `configs/default.yaml`, 
 python -m sentseg.cli -c configs/default.yaml --baseline regex --model textcnn
 ```
 
-Thay `--baseline` bằng `none`, `punkt` hoặc `wtp` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
+Thay `--baseline` bằng `none`, `punkt`, `wtp`, `crf` hoặc `phobert` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
 
 ### Lưu ý
 

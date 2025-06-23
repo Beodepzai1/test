@@ -14,7 +14,7 @@ def apply_segmentation(df, split_func: Callable[[str], list[str]]):
     return df
 
 
-def load_baseline(name: str) -> Callable[[str], list[str]]:
+def load_baseline(name: str, cfg: dict | None = None) -> Callable[[str], list[str]]:
     if name == "regex":
         return regex_split
     if name == "none":
@@ -22,6 +22,12 @@ def load_baseline(name: str) -> Callable[[str], list[str]]:
         return split_none
     if name == "punkt":
         return punkt_wrapper.PunktSplitter().split
+    if name == "crf":
+        from sentseg.baselines import crf_wrapper
+        from pathlib import Path
+        model_dir = Path(cfg.get("output", {}).get("dir", ".")) if cfg else Path(".")
+        model_path = model_dir / "crf.pkl"
+        return crf_wrapper.CRFSplitter(model_path).split
     if name == "wtp":
         try:
             return wtp_wrapper.WtPSplitter().split
@@ -35,13 +41,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
     ap.add_argument("--baseline", default="regex",
-                    choices=["regex", "none", "punkt", "wtp"])
+                    choices=["regex", "none", "punkt", "wtp", "crf"])
     ap.add_argument("--model", default="textcnn",
                     choices=["textcnn", "bert", "gru"])
     args = ap.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
-    splitter = load_baseline(args.baseline)
+    splitter = load_baseline(args.baseline, cfg)
 
     train_df, dev_df, test_df = ds.load(cfg)
     train_df = apply_segmentation(train_df, splitter)
