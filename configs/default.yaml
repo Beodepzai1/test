@@ -1,8 +1,8 @@
 data:
-  train_path: /mnt/data/train.csv   # sửa lại path thực
-  dev_path:   /mnt/data/dev.csv
-  test_path:  /mnt/data/test.csv
-  train_conll: /mnt/data/train.conll
+  train_path: sample_data/train.csv
+  dev_path:   sample_data/dev.csv
+  test_path:  sample_data/test.csv
+  train_conll: sample_data/train.conll
 
 models:
   crf:
@@ -24,4 +24,4 @@ trainer:
   epochs: 3
 
 output:
-  dir: /mnt/data/sentseg_output
+  dir: sample_output

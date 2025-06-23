@@ -9,14 +9,9 @@ authors     = [{name = "Research Upgraded"}]
 
 dependencies = [
   "pandas>=2.2.2",
-  "transformers>=4.41.0",
-  "torch>=2.3.0",
-  "datasets>=2.19.0",
   "sklearn-crfsuite>=0.3.6",
   "python-crfsuite>=0.9.9",
-  "wtpsplit>=0.2.0",
   "pyyaml>=6.0",
   "nltk>=3.8.1",
-  "tqdm",
-  "gensim>=4.3.2"
+  "tqdm"
 ]

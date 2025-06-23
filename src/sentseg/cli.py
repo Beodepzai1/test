@@ -5,12 +5,11 @@ import yaml
 from pathlib import Path
 from typing import Callable, List
 
-import numpy as np
-
 from sentseg import dataset as ds, evaluator
 from sentseg.baseline import split as regex_split
 from sentseg.baselines import punkt_wrapper, wtp_wrapper
-from sentseg.classifier_models import build_textcnn, build_gru, build_bert
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
 
 LABEL_COL = "label_id"        
 
@@ -31,22 +30,13 @@ def load_baseline(name: str) -> Callable[[str], List[str]]:
     raise ValueError("unknown baseline")
 
 
-def pad_sequences(seqs: List[List[int]], pad_idx: int = 0) -> List[List[int]]:
-    """Đệm tất cả chuỗi token về cùng chiều dài = max_len."""
-    max_len = max(len(s) for s in seqs)
-    return [s + [pad_idx] * (max_len - len(s)) for s in seqs]
-
-
 def main():
     # ─── 1. Đọc tham số dòng lệnh ───────────────────────────────────────────
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
     ap.add_argument("--baseline", default="regex",
                     choices=["regex", "punkt", "wtp"])
-    ap.add_argument("--model", required=True,
-                    choices=["textcnn", "bert", "gru"],
-                    help="classification model")
-    ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
+    ap.add_argument("--model", default="logreg")
     args = ap.parse_args()
 
     # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
@@ -63,99 +53,20 @@ def main():
     dev_df   = apply_segmentation(dev_df,   splitter)
     test_df  = apply_segmentation(test_df,  splitter)
 
-    num_classes = train_df[LABEL_COL].nunique()
+    # ─── 3. Vector hoá & huấn luyện đơn giản bằng Logistic Regression ───────
+    vectorizer = CountVectorizer()
+    X_train = vectorizer.fit_transform(train_df["segmented"])
+    X_dev   = vectorizer.transform(dev_df["segmented"])
+    X_test  = vectorizer.transform(test_df["segmented"])
 
-    # ─── 3. Xây mô hình & tokenizer ─────────────────────────────────────────
-    if args.model == "bert":
-        model, tk = build_bert(num_classes=num_classes)
-        def encode_df(df):
-            enc_out = tk(df["segmented"].tolist(),
-                         truncation=True, padding=True, return_tensors="pt")
-            return enc_out["input_ids"].tolist()
-    else:
-        # Tokenizer đơn giản: tách space
-        tk = lambda x: x.split()
-        vocab = {tok for text in train_df["segmented"] for tok in tk(text)}
-        stoi = {tok: i + 2 for i, tok in enumerate(sorted(vocab))}
-        stoi["<pad>"] = 0
-        stoi["<unk>"] = 1
+    model = LogisticRegression(max_iter=200)
+    model.fit(X_train, train_df[LABEL_COL])
 
-        embed_dim = 128
-        embeddings = None
-        if args.fasttext:
-            from gensim.models import KeyedVectors
-            kv = KeyedVectors.load_word2vec_format(args.fasttext)
-            embed_dim = kv.vector_size
-            embeddings = np.random.normal(scale=0.6, size=(len(stoi), embed_dim))
-            embeddings[0] = 0
-            embeddings[1] = 0
-            for tok, idx in stoi.items():
-                if tok in kv:
-                    embeddings[idx] = kv[tok]
+    dev_pred  = model.predict(X_dev).tolist()
+    test_pred = model.predict(X_test).tolist()
 
-        def encode(text: str) -> List[int]:
-            return [stoi.get(tok, 1) for tok in tk(text)]
-
-        def encode_df(df):
-            ids = [encode(t) for t in df["segmented"]]
-            return pad_sequences(ids, pad_idx=0)
-
-        if args.model == "textcnn":
-            model = build_textcnn(
-                len(stoi),
-                num_classes,
-                embed_dim=embed_dim,
-                pretrained_embeddings=embeddings,
-            )
-        else:  # gru
-            model = build_gru(
-                len(stoi),
-                num_classes,
-                embed_dim=embed_dim,
-                pretrained_embeddings=embeddings,
-            )
-
-    # ─── 4. Mã hoá & padding dữ liệu ────────────────────────────────────────
-    train_ids = encode_df(train_df)
-    dev_ids   = encode_df(dev_df)
-    test_ids  = encode_df(test_df)
-
-    train_ds = {"input_ids": train_ids, "labels": train_df[LABEL_COL].tolist()}
-    dev_ds   = {"input_ids": dev_ids,   "labels": dev_df[LABEL_COL].tolist()}
-    test_ds  = {"input_ids": test_ids,  "labels": test_df[LABEL_COL].tolist()}
-
-    # ─── 5. Huấn luyện demo (2 epoch) ───────────────────────────────────────
-    try:
-        torch = __import__("importlib").import_module("torch")
-        nn    = __import__("importlib").import_module("torch.nn")
-    except Exception:
-        raise ImportError("PyTorch required to train models")
-
-    optim = torch.optim.Adam(model.parameters(), lr=1e-3)
-    loss_fn = nn.CrossEntropyLoss()
-    X = torch.tensor(train_ds["input_ids"], dtype=torch.long)
-    y = torch.tensor(train_ds["labels"],     dtype=torch.long)
-
-    model.train()
-    for _ in range(2):
-        optim.zero_grad()
-        out = model(X)
-        loss = loss_fn(out, y)
-        loss.backward()
-        optim.step()
-
-    # ─── 6. Dự đoán & đánh giá ─────────────────────────────────────────────
-    def predict(dataset):
-        model.eval()
-        X = torch.tensor(dataset["input_ids"], dtype=torch.long)
-        with torch.no_grad():
-            return model(X).argmax(-1).tolist()
-
-    dev_pred  = predict(dev_ds)
-    test_pred = predict(test_ds)
-
-    dev_res  = evaluator.evaluate_labels(dev_ds["labels"],  dev_pred)
-    test_res = evaluator.evaluate_labels(test_ds["labels"], test_pred)
+    dev_res  = evaluator.evaluate_labels(dev_df[LABEL_COL],  dev_pred)
+    test_res = evaluator.evaluate_labels(test_df[LABEL_COL], test_pred)
     print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
     print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
 
