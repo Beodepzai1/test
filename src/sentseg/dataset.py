@@ -39,10 +39,18 @@ def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _read_csv(path: str) -> pd.DataFrame:
+    """Read a CSV file with a clearer error message if it is missing."""
+    f = Path(path)
+    if not f.exists():
+        raise FileNotFoundError(f"Dataset file not found: {path}")
+    return pd.read_csv(f)
+
+
 def load(cfg: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    train = pd.read_csv(cfg["data"]["train_path"])
-    dev = pd.read_csv(cfg["data"]["dev_path"])
-    test = pd.read_csv(cfg["data"]["test_path"])
+    train = _read_csv(cfg["data"]["train_path"])
+    dev = _read_csv(cfg["data"]["dev_path"])
+    test = _read_csv(cfg["data"]["test_path"])
     return (_remap_labels(train), _remap_labels(dev), _remap_labels(test))
 
 def _split_row(row) -> List[str]:
