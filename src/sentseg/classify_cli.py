@@ -25,8 +25,12 @@ def load_baseline(name: str, cfg: dict | None = None) -> Callable[[str], list[st
     if name == "crf":
         from sentseg.baselines import crf_wrapper
         from pathlib import Path
+        from sentseg import dataset, trainer
         model_dir = Path(cfg.get("output", {}).get("dir", ".")) if cfg else Path(".")
         model_path = model_dir / "crf.pkl"
+        if cfg is not None and not model_path.exists():
+            dataset.prepare(cfg)
+            trainer.train_crf(cfg)
         return crf_wrapper.CRFSplitter(model_path).split
     if name == "wtp":
         try:

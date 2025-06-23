@@ -34,6 +34,8 @@ Thay `--baseline` bằng `none`, `punkt`, `wtp`, `crf` hoặc `phobert` và `--m
 - Khi dùng `phobert`, chương trình sẽ in F1 và Accuracy trên tập dev và test sau khi huấn luyện.
 - Baseline `wtp` mặc định tải mô hình `wtp-bert-mini` từ HuggingFace. Hãy đảm
   bảo máy tính có kết nối mạng trong lần chạy đầu tiên.
+- Baseline `crf` sẽ tự động huấn luyện và lưu `crf.pkl` vào thư mục `output.dir`
+  nếu chưa tồn tại.
 
 ## Phân loại văn bản
 
