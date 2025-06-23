@@ -1,8 +1,8 @@
 data:
-  train_path: /mnt/data/train.csv   # sửa lại path thực
-  dev_path:   /mnt/data/dev.csv
-  test_path:  /mnt/data/test.csv
-  train_conll: /mnt/data/train.conll
+  train_path: data/train.csv   # sửa lại path thực
+  dev_path:   data/dev.csv
+  test_path:  data/test.csv
+  train_conll: data/train.conll
 
 models:
   crf:
