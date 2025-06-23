@@ -172,7 +172,7 @@ def main():
                 Xb, yb = Xb.to(device), yb.to(device)
                 optim.zero_grad()
                 out = model(Xb)
-                loss = loss_fn(out, yb)
+                loss = loss_fn(out.logits, yb)
                 loss.backward()
                 optim.step()
 
@@ -184,7 +184,7 @@ def main():
             preds = []
             with torch.no_grad():
                 for Xb in loader:
-                    out = model(Xb.to(device)).argmax(-1).cpu().tolist()
+                    out = model(Xb.to(device)).logits.argmax(-1).cpu().tolist()
                     preds.extend(out)
             return preds
 
