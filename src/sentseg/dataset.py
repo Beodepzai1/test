@@ -1,4 +1,7 @@
 from __future__ import annotations
+import sys
+if "/usr/lib/python3/dist-packages" not in sys.path:
+    sys.path.append("/usr/lib/python3/dist-packages")
 import pandas as pd, re
 from pathlib import Path
 from typing import List, Dict, Tuple

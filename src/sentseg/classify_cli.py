@@ -17,10 +17,17 @@ def apply_segmentation(df, split_func: Callable[[str], list[str]]):
 def load_baseline(name: str) -> Callable[[str], list[str]]:
     if name == "regex":
         return regex_split
+    if name == "none":
+        from sentseg.baseline import split_none
+        return split_none
     if name == "punkt":
         return punkt_wrapper.PunktSplitter().split
     if name == "wtp":
-        return wtp_wrapper.WtPSplitter().split
+        try:
+            return wtp_wrapper.WtPSplitter().split
+        except Exception as e:
+            print(f"Warning: cannot load WtP baseline ({e}); falling back to regex")
+            return regex_split
     raise ValueError("unknown baseline")
 
 
@@ -28,7 +35,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
     ap.add_argument("--baseline", default="regex",
-                    choices=["regex", "punkt", "wtp"])
+                    choices=["regex", "none", "punkt", "wtp"])
     ap.add_argument("--model", default="textcnn",
                     choices=["textcnn", "bert", "gru"])
     args = ap.parse_args()

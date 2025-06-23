@@ -1,9 +1,10 @@
 # SentenceSeg-VIHSD
 
-Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm ba nhãn `clean=1`, `offensive=2`, `hate=3`) kèm 6 baseline:
+Bộ công cụ phân đoạn câu tiếng Việt trên tập **VIHSD** (gồm ba nhãn `clean=0`, `offensive=1`, `hate=2`) kèm 7 baseline:
 
 | Baseline         | Nhóm        | Tham chiếu nghiên cứu         |
 |------------------|--------------|-----------------------------------------|
+| none             | Identity     | Không tách câu                         |
 | regex            | RB           | Moses / SpaCy-SENT                      |
 | crf              | SS           | Riley 1989, Splitta                     |
 | phobert          | DL           | Ersatz (Transformer)                    |
@@ -25,7 +26,7 @@ Sau khi chỉnh sửa đường dẫn dữ liệu trong `configs/default.yaml`, 
 python -m sentseg.cli -c configs/default.yaml --baseline regex --model textcnn
 ```
 
-Thay `--baseline` bằng `punkt` hoặc `wtp` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
+Thay `--baseline` bằng `none`, `punkt` hoặc `wtp` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
 
 ### Lưu ý
 
