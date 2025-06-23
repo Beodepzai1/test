@@ -95,6 +95,9 @@ def build_gru(
 
 def build_bert(model_name: str = "bert-base-multilingual-cased", num_classes: int = 3):
     torch, nn, _ = _load_torch()
+    # Avoid importing optional vision dependencies that may not be available.
+    import os
+    os.environ.setdefault("TRANSFORMERS_NO_TORCHVISION_IMPORT", "1")
     transformers = importlib.import_module("transformers")
     model = transformers.AutoModelForSequenceClassification.from_pretrained(
         model_name, num_labels=num_classes
