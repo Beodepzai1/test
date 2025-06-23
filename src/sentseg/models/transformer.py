@@ -8,13 +8,17 @@ class PhoBERTSegmenter:
         self.model = AutoModelForTokenClassification.from_pretrained(
             model_name, num_labels=num_labels
         )
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
 
     def predict(self, text: str):
         self.model.eval()
         ids = self.tk(text, return_tensors="pt", truncation=True)
+        input_ids = ids["input_ids"]
+        ids = {k: v.to(self.device) for k, v in ids.items()}
         with torch.no_grad():
-            out = self.model(**ids).logits.argmax(-1).squeeze()
-        toks = self.tk.convert_ids_to_tokens(ids["input_ids"].squeeze())
+            out = self.model(**ids).logits.argmax(-1).squeeze().cpu()
+        toks = self.tk.convert_ids_to_tokens(input_ids.squeeze())
         sent, sents = [], []
         for tok, lab in zip(toks, out.tolist()):
             if tok in ["<s>", "</s>"]: continue

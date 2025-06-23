@@ -80,10 +80,13 @@ def main():
     except Exception:
         raise ImportError("PyTorch required to train models")
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
     optim = torch.optim.Adam(model.parameters(), lr=1e-3)
     loss_fn = nn.CrossEntropyLoss()
-    X = torch.tensor(train_ds["input_ids"], dtype=torch.long)
-    y = torch.tensor(train_ds["labels"], dtype=torch.long)
+    X = torch.tensor(train_ds["input_ids"], dtype=torch.long).to(device)
+    y = torch.tensor(train_ds["labels"], dtype=torch.long).to(device)
     model.train()
     for _ in range(2):  # few epochs for demo
         optim.zero_grad()
@@ -94,9 +97,9 @@ def main():
 
     def predict(dataset):
         model.eval()
-        X = torch.tensor(dataset["input_ids"], dtype=torch.long)
+        X = torch.tensor(dataset["input_ids"], dtype=torch.long).to(device)
         with torch.no_grad():
-            out = model(X).argmax(-1).tolist()
+            out = model(X).argmax(-1).cpu().tolist()
         return out
 
     dev_pred = predict(dev_ds)
