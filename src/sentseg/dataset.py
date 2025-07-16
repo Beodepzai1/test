@@ -30,23 +30,52 @@ def _sent2tokens(sent: str) -> List[str]:
     return sent.split()
 
 # ---------- public API ------------
-def _remap_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2)."""
-    if "label" not in df.columns:
+def _remap_labels(df: pd.DataFrame, col: str) -> pd.DataFrame:
+    """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2).
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe containing the label column.
+    col : str
+        Name of the label column which will be normalised if appropriate.
+    """
+
+    if col not in df.columns:
         return df
 
     df = df.copy()
-    vals = set(df["label"].unique())
+    vals = set(df[col].unique())
     if vals <= {1, 2, 3}:  # dataset uses 1-based indexing
-        df["label"] = df["label"].map({1: 0, 2: 1, 3: 2})
+        df[col] = df[col].map({1: 0, 2: 1, 3: 2})
     return df
+
+
+def _standardise_columns(df: pd.DataFrame, cfg: Dict) -> pd.DataFrame:
+    """Rename text/label columns to the canonical names used in the code."""
+
+    text_col = cfg.get("text_column", "free_text")
+    label_col = cfg.get("label_column", "label_id")
+
+    df = df.copy()
+    if text_col in df.columns and text_col != "free_text":
+        df = df.rename(columns={text_col: "free_text"})
+    if label_col in df.columns and label_col != "label_id":
+        df = df.rename(columns={label_col: "label_id"})
+
+    return _remap_labels(df, "label_id")
 
 
 def load(cfg: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     train = pd.read_csv(cfg["data"]["train_path"])
     dev = pd.read_csv(cfg["data"]["dev_path"])
     test = pd.read_csv(cfg["data"]["test_path"])
-    return (_remap_labels(train), _remap_labels(dev), _remap_labels(test))
+
+    train = _standardise_columns(train, cfg["data"])
+    dev = _standardise_columns(dev, cfg["data"])
+    test = _standardise_columns(test, cfg["data"])
+
+    return train, dev, test
 
 def _split_row(row) -> List[str]:
     """Return the list of sentences for a DataFrame row.

@@ -27,5 +27,17 @@ python -m sentseg.cli -c configs/default.yaml --baseline regex --model textcnn
 
 Thay `--baseline` bằng `none`, `punkt`, `wtp`, `crf` và `--model` bằng `bert` hoặc `gru` tùy nhu cầu. Lệnh sẽ in ra F1 và Accuracy trên tập dev và test.
 
+Nếu muốn thử nghiệm trên bộ dữ liệu nhận dạng spam, chỉnh sửa đường dẫn trong
+`configs/spam.yaml` (hoặc truyền file cấu hình tương tự) rồi chạy:
+
+```bash
+python -m sentseg.cli -c configs/spam.yaml --baseline regex --model textcnn
+```
+
+Hai file cấu hình `default.yaml` và `spam.yaml` có chung định dạng và chỉ khác ở
+đường dẫn dữ liệu cũng như tên cột chứa nội dung (`text_column`) và nhãn
+(`label_column`). Nhờ đó có thể chuyển đổi linh hoạt giữa các tập dữ liệu khi
+thực hiện các thí nghiệm.
+
 
 

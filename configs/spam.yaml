@@ -1,0 +1,23 @@
+data:
+  train_path: spamdata/train.csv
+  dev_path: spamdata/dev.csv
+  test_path: spamdata/test.csv
+  text_column: comment
+  label_column: spam_label
+  train_conll: spamdata/train.conll
+
+models:
+  crf:
+    c1: 0.1
+    c2: 0.1
+    max_iter: 200
+  transformer:
+    model_name: vinai/phobert-base
+
+trainer:
+  batch_size: 16
+  learning_rate: 5e-5
+  epochs: 3
+
+output:
+  dir: /mnt/data/sentseg_output

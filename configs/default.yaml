@@ -2,6 +2,8 @@ data:
   train_path: data/train.csv   # sửa lại path thực
   dev_path:   data/dev.csv
   test_path:  data/test.csv
+  text_column: free_text
+  label_column: label_id
   train_conll: data/train.conll
 
 models:
