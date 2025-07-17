@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# sentseg/cli.py
 import sys
 from pathlib import Path
 from typing import Callable, List
@@ -10,7 +9,6 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 
-# These are only available when PyTorch is installed
 DataLoader = TensorDataset = None
 
 from sentseg import dataset as ds, evaluator
@@ -19,9 +17,6 @@ from sentseg.classifier_models import build_textcnn, build_gru, build_bert
 
 LABEL_COL = "label_id"
 
-# --------------------------------------------------------------------------- #
-# Tiện ích chung
-# --------------------------------------------------------------------------- #
 def apply_segmentation(df, split_func: Callable[[str], List[str]]):
     df = df.copy()
     df["segmented"] = df["free_text"].apply(lambda t: " ".join(split_func(str(t))))
@@ -62,11 +57,7 @@ def pad_sequences(seqs: List[List[int]], pad_idx: int = 0) -> List[List[int]]:
     return [s + [pad_idx] * (max_len - len(s)) for s in seqs]
 
 
-# --------------------------------------------------------------------------- #
-# Chương trình chính
-# --------------------------------------------------------------------------- #
 def main():
-    # ─── 1. Đọc tham số dòng lệnh ───────────────────────────────────────────
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--config", required=True)
     ap.add_argument("--baseline", default="regex", choices=["regex", "none", "punkt", "wtp", "crf"])
@@ -81,7 +72,6 @@ def main():
     )
     args = ap.parse_args()
 
-    # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     if "data" not in cfg:
         cfg["data"] = {}
@@ -98,7 +88,6 @@ def main():
     test_df = apply_segmentation(test_df, splitter)
     num_classes = train_df[LABEL_COL].nunique()
 
-    # ─── 3. Khởi tạo Torch ──────────────────────────────────────────────────
     use_torch = True
     try:
         import importlib
@@ -110,11 +99,7 @@ def main():
     except Exception:
         use_torch = False
 
-    # ======================================================================= #
-    # A. Mô hình TEXTCNN / GRU -- nếu dùng PyTorch và KHÔNG chọn BERT
-    # ======================================================================= #
     if use_torch and args.model != "bert":
-        # Tokenizer đơn giản: tách theo space
         tk = lambda x: x.split()
         vocab = {tok for text in train_df["segmented"] for tok in tk(text)}
         stoi = {tok: i + 2 for i, tok in enumerate(sorted(vocab))}
@@ -144,10 +129,9 @@ def main():
 
         if args.model == "textcnn":
             model = build_textcnn(len(stoi), num_classes, embed_dim=embed_dim, pretrained_embeddings=embeddings)
-        else:  # gru
+        else:
             model = build_gru(len(stoi), num_classes, embed_dim=embed_dim, pretrained_embeddings=embeddings)
 
-        # ─── 4A. Mã hoá dữ liệu ────────────────────────────────────────────
         train_ids = encode_df(train_df)
         dev_ids = encode_df(dev_df)
         test_ids = encode_df(test_df)
@@ -156,7 +140,6 @@ def main():
         dev_ds = {"input_ids": dev_ids, "labels": dev_df[LABEL_COL].tolist()}
         test_ds = {"input_ids": test_ids, "labels": test_df[LABEL_COL].tolist()}
 
-        # ─── 5A. Huấn luyện demo ───────────────────────────────────────────
         optim = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = nn.CrossEntropyLoss()
         batch_size = cfg.get("trainer", {}).get("batch_size", 16)
@@ -172,13 +155,12 @@ def main():
                 Xb, yb = Xb.to(device), yb.to(device)
                 optim.zero_grad()
 
-                logits = model(Xb)                 # TextCNN / GRU trả tensor
+                logits = model(Xb)
                 loss = loss_fn(logits, yb)
 
                 loss.backward()
                 optim.step()
 
-        # ─── 6A. Dự đoán & đánh giá ───────────────────────────────────────
         def predict(dataset):
             model.eval()
             X = torch.tensor(dataset["input_ids"], dtype=torch.long)
@@ -198,9 +180,6 @@ def main():
         print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
         print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
 
-    # ======================================================================= #
-    # B. Mô hình BERT -- nếu dùng PyTorch và chọn BERT
-    # ======================================================================= #
     elif use_torch and args.model == "bert":
         model, tk = build_bert(num_classes=num_classes)
 
@@ -238,7 +217,6 @@ def main():
                 loss.backward()
                 optim.step()
 
-        # ─── 6B. Dự đoán & đánh giá ───────────────────────────────────────
         def predict(dataset):
             model.eval()
             X = torch.tensor(dataset["input_ids"], dtype=torch.long)
@@ -258,9 +236,6 @@ def main():
         print(f"Dev  - F1={dev_res['f1']:.4f}  Acc={dev_res['accuracy']:.4f}")
         print(f"Test - F1={test_res['f1']:.4f}  Acc={test_res['accuracy']:.4f}")
 
-    # ======================================================================= #
-    # C. Fallback Logistic Regression (không cần PyTorch)
-    # ======================================================================= #
     else:
         tk = lambda x: x.split()
         vectorizer = CountVectorizer(tokenizer=tk)

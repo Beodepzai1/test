@@ -1,1 +1,1 @@
-from sentseg.baseline import split  # alias
+from sentseg.baseline import split
