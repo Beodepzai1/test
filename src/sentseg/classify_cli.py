@@ -82,7 +82,7 @@ def main():
     dev_ds = {**enc(dev_df), "labels": dev_df["label"].tolist()}
     test_ds = {**enc(test_df), "labels": test_df["label"].tolist()}
 
-    # Simple training loop (placeholder)
+    # Simple training loop
     try:
         torch, nn, F = __import__("importlib").import_module("torch"), \
             __import__("importlib").import_module("torch.nn"), \
@@ -98,7 +98,7 @@ def main():
     X = torch.tensor(train_ds["input_ids"], dtype=torch.long).to(device)
     y = torch.tensor(train_ds["labels"], dtype=torch.long).to(device)
     model.train()
-    for _ in range(2):  # few epochs for demo
+    for _ in range(2):
         optim.zero_grad()
         out = model(X)
         loss = loss_fn(out, y)

@@ -152,7 +152,7 @@ def main():
         dev_ds = {"input_ids": dev_ids, "labels": dev_df[LABEL_COL].tolist()}
         test_ds = {"input_ids": test_ids, "labels": test_df[LABEL_COL].tolist()}
 
-        # ─── 5A. Huấn luyện demo ───────────────────────────────────────────
+        # ─── 5A. Huấn luyện ───────────────────────────────────────────────
         optim = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = nn.CrossEntropyLoss()
         batch_size = cfg.get("trainer", {}).get("batch_size", 16)
@@ -168,7 +168,7 @@ def main():
                 Xb, yb = Xb.to(device), yb.to(device)
                 optim.zero_grad()
 
-                logits = model(Xb)                 # TextCNN / GRU trả tensor
+                logits = model(Xb)
                 loss = loss_fn(logits, yb)
 
                 loss.backward()
