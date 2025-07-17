@@ -70,10 +70,20 @@ def main():
     ap.add_argument("--baseline", default="regex", choices=["regex", "none", "punkt", "wtp", "crf"])
     ap.add_argument("--model", required=True, choices=["textcnn", "bert", "gru"], help="classification model")
     ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
+    ap.add_argument(
+        "--task",
+        type=int,
+        choices=[1, 2],
+        default=1,
+        help="1=spam/not spam, 2=spam type classification",
+    )
     args = ap.parse_args()
 
     # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    if "data" not in cfg:
+        cfg["data"] = {}
+    cfg["data"]["label_column"] = "label" if args.task == 1 else "spam_label"
     splitter = load_baseline(args.baseline, cfg)
 
     train_df, dev_df, test_df = ds.load(cfg)
