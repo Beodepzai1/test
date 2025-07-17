@@ -13,7 +13,6 @@ import transformers
 from sentseg.models import crf_model
 from sentseg.features import sent2features, sent2labels
 
-# ------------ utilities -------------
 def _read_conll(path: Path):
     sents, sent = [], []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -24,7 +23,6 @@ def _read_conll(path: Path):
             sent.append((tok, lab))
     return sents
 
-# ------------ CRF -------------------
 def train_crf(cfg: Dict):
     sents = _read_conll(Path(cfg["data"]["train_conll"]))
     model = crf_model.train(
@@ -37,7 +35,6 @@ def train_crf(cfg: Dict):
     (out / "crf.pkl").write_bytes(__import__("pickle").dumps(model))
     return model
 
-# ------------ PhoBERT ---------------
 def train_transformer(cfg: Dict):
     if version.parse(transformers.__version__) < version.parse("4.41.0"):
         raise RuntimeError(

@@ -21,7 +21,6 @@ These labels are not used for sentence segmentation but remain in the CSV
 files for reference.
 """
 
-# ---------- tiny helpers ----------
 def _split_by_punc(text: str) -> List[str]:
     return [p for p in re.split(r"(?<=[.!?])\s+", text.strip()) if p]
 
@@ -29,7 +28,6 @@ def _sent2tokens(sent: str) -> List[str]:
     sent = re.sub(r"([.!?])", r" \1 ", sent)
     return sent.split()
 
-# ---------- public API ------------
 def _remap_labels(df: pd.DataFrame, col: str) -> pd.DataFrame:
     """Ensure class labels are 0-indexed (clean=0, offensive=1, hate=2).
 
@@ -100,7 +98,7 @@ def make_conll(df: pd.DataFrame, out_path: Path) -> None:
             for i, tok in enumerate(toks):
                 lab = "B" if i == len(toks) - 1 else "I"
                 rows.append(f"{tok}\t{lab}")
-            rows.append("")          # blank line = new sentence
+            rows.append("")
     out_path.write_text("\n".join(rows), encoding="utf-8")
 
 def prepare(cfg: Dict):

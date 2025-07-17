@@ -63,7 +63,6 @@ def main():
         enc = lambda batch: tk(batch["segmented"], truncation=True, padding=True)
     else:
         tk = lambda x: x.split()
-        # Build vocabulary
         vocab = {tok for text in train_df["segmented"] for tok in tk(text)}
         stoi = {tok: i + 2 for i, tok in enumerate(sorted(vocab))}
         stoi["<pad>"] = 0
@@ -82,7 +81,6 @@ def main():
     dev_ds = {**enc(dev_df), "labels": dev_df["label"].tolist()}
     test_ds = {**enc(test_df), "labels": test_df["label"].tolist()}
 
-    # Simple training loop (placeholder)
     try:
         torch, nn, F = __import__("importlib").import_module("torch"), \
             __import__("importlib").import_module("torch.nn"), \
@@ -98,7 +96,7 @@ def main():
     X = torch.tensor(train_ds["input_ids"], dtype=torch.long).to(device)
     y = torch.tensor(train_ds["labels"], dtype=torch.long).to(device)
     model.train()
-    for _ in range(2):  # few epochs for demo
+    for _ in range(2):
         optim.zero_grad()
         out = model(X)
         loss = loss_fn(out, y)
