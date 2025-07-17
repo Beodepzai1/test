@@ -30,9 +30,13 @@ Thay `--baseline` bằng `none`, `punkt`, `wtp`, `crf` và `--model` bằng `ber
 Nếu muốn thử nghiệm trên bộ dữ liệu nhận dạng spam, chỉnh sửa đường dẫn trong
 `configs/spam.yaml` (hoặc truyền file cấu hình tương tự) rồi chạy:
 
+
 ```bash
-python -m sentseg.cli -c configs/spam.yaml --baseline regex --model textcnn
+python -m sentseg.cli -c configs/spam.yaml --baseline regex --model textcnn --task 1
 ```
+
+Thêm `--task` để chọn nhiệm vụ: `1` = phát hiện spam (nhị phân) hoặc `2` = phân
+loại kiểu spam (mặc định).
 
 Hai file cấu hình `default.yaml` và `spam.yaml` có chung định dạng và chỉ khác ở
 đường dẫn dữ liệu cũng như tên cột chứa nội dung (`text_column`) và nhãn

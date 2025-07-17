@@ -70,6 +70,13 @@ def main():
     ap.add_argument("--baseline", default="regex", choices=["regex", "none", "punkt", "wtp", "crf"])
     ap.add_argument("--model", required=True, choices=["textcnn", "bert", "gru"], help="classification model")
     ap.add_argument("--fasttext", help="Path to FastText .vec embeddings")
+    ap.add_argument(
+        "--task",
+        type=int,
+        choices=[1, 2],
+        default=2,
+        help="1: spam vs not spam, 2: spam type classification",
+    )
     args = ap.parse_args()
 
     # ─── 2. Load dữ liệu & tiền xử lý ───────────────────────────────────────
@@ -81,9 +88,20 @@ def main():
         if LABEL_COL not in df.columns:
             raise KeyError(f"'{LABEL_COL}' not found in {name} dataframe")
 
+    if args.task == 1:
+        def _to_binary(df):
+            df = df.copy()
+            df[LABEL_COL] = (df[LABEL_COL] > 0).astype(int)
+            return df
+
+        train_df = _to_binary(train_df)
+        dev_df = _to_binary(dev_df)
+        test_df = _to_binary(test_df)
+
     train_df = apply_segmentation(train_df, splitter)
     dev_df = apply_segmentation(dev_df, splitter)
     test_df = apply_segmentation(test_df, splitter)
+
     num_classes = train_df[LABEL_COL].nunique()
 
     # ─── 3. Khởi tạo Torch ──────────────────────────────────────────────────
