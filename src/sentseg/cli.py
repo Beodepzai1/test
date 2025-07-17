@@ -9,7 +9,9 @@ import yaml
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
-from torch.utils.data import DataLoader, TensorDataset
+
+# These are only available when PyTorch is installed
+DataLoader = TensorDataset = None
 
 from sentseg import dataset as ds, evaluator
 from sentseg.baseline import split as regex_split
@@ -102,6 +104,8 @@ def main():
         import importlib
         torch = importlib.import_module("torch")
         nn = importlib.import_module("torch.nn")
+        global DataLoader, TensorDataset
+        from torch.utils.data import DataLoader, TensorDataset
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     except Exception:
         use_torch = False

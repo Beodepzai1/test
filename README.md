@@ -38,9 +38,9 @@ Tuỳ chọn `--task` cho phép chuyển đổi giữa hai bài toán:
 
 ```bash
 # Task 1: phát hiện spam hay không spam
-python -m sentseg.cli -c configs/spam.yaml --model textcnn --task 1
+python -m sentseg.cli -c configs/spam.yaml --baseline regex --model textcnn --task 1
 # Task 2: phân loại các kiểu spam (SPAM-1, SPAM-2, SPAM-3)
-python -m sentseg.cli -c configs/spam.yaml --model textcnn --task 2
+python -m sentseg.cli -c configs/spam.yaml --baseline regex --model textcnn --task 2
 ```
 
 Hai file cấu hình `default.yaml` và `spam.yaml` có chung định dạng và chỉ khác ở
